@@ -532,6 +532,8 @@ Start by provisioning a `cli-only` installation.
 ```bash
 cd installation/cli-only
 vagrant up
+[ Output omitted for brevity]
+# Once the machine boots, login via vagrant ssh and verify the status,
 docker info
 Client:
  Context:    default
@@ -546,6 +548,43 @@ errors pretty printing info
 ```
 
 As expected, there is no docker daemon installed.
+
+Provision full docker install on `getdc`.
+```bash
+cd installation/getdc
+vagrant up
+[ Output omitted for brevity]
+# Once the machine boots, login via vagrant ssh and verify the status,
+docker info
+Client: Docker Engine - Community
+ Version:           20.10.3
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        48d30b5
+ Built:             Fri Jan 29 14:33:21 2021
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.3
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       46229ca
+  Built:            Fri Jan 29 14:31:32 2021
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+  ```
 
 
 
