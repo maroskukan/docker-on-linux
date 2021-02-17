@@ -5,6 +5,13 @@
   - [Installation](#installation)
     - [Option A - Manual Provisioning](#option-a---manual-provisioning)
       - [Create Virtual Machine](#create-virtual-machine)
+      - [Uninstall old versions](#uninstall-old-versions)
+      - [Set up the repository](#set-up-the-repository)
+      - [Install Docker Engine](#install-docker-engine)
+      - [Start Dockear daemon](#start-dockear-daemon)
+      - [Adding User to docker group](#adding-user-to-docker-group)
+      - [Enable Docker service on boot](#enable-docker-service-on-boot)
+      - [Verification](#verification)
     - [Option B - Bash Provisioning](#option-b---bash-provisioning)
     - [Option C - Ansible Provisioning](#option-c---ansible-provisioning)
 
@@ -52,6 +59,8 @@ vagrant ssh
 # Verify user
 [vagrant@localhost ~]$ id
 uid=1000(vagrant) gid=1000(vagrant) groups=1000(vagrant) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+[vagrant@localhost ~]$ groups
+vagrant
 # Verify release
 [vagrant@localhost ~]$ cat /etc/*release
 CentOS Linux release 7.8.2003 (Core)
@@ -75,7 +84,212 @@ CentOS Linux release 7.8.2003 (Core)
 CentOS Linux release 7.8.2003 (Core)
 ```
 
+To install Docker, we are going to follow the [Install Docker Engine on CentOS](https://docs.docker.com/engine/install/centos/). From the guest shell follow these procedures to install docker on Centos 7.
 
+#### Uninstall old versions
+
+```bash
+sudo yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
+```
+
+#### Set up the repository
+
+```bash
+sudo yum install -y yum-utils
+sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+```
+
+#### Install Docker Engine
+
+Install the `docker-ce`, `docker-ce-cli` and `containerd.io`.
+```bash
+sudo yum install -y docker-ce docker-ce-cli containerd.io
+```
+
+Verify the that `docker` command is available.
+```bash
+docker version
+Client: Docker Engine - Community
+ Version:           20.10.3
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        48d30b5
+ Built:             Fri Jan 29 14:34:14 2021
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+```
+
+Verify that the docker deamon is running.
+```bash
+ls /var/run | grep docker.sock
+
+# Check service status using system manager
+systemctl status docker.service
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/usr/lib/systemd/system/docker.service; disabled; vendor preset: disabled)
+   Active: inactive (dead)
+     Docs: https://docs.docker.com
+
+systemctl status docker.socket
+● docker.socket - Docker Socket for the API
+   Loaded: loaded (/usr/lib/systemd/system/docker.socket; disabled; vendor preset: disabled)
+   Active: inactive (dead)
+   Listen: /var/run/docker.sock (Stream)
+```
+
+#### Start Dockear daemon
+
+```bash
+sudo systemctl start docker
+# Rerun the systemctl status for docker.service and docker.host to verify that both services are running
+systemctl status docker.service
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/usr/lib/systemd/system/docker.service; disabled; vendor preset: disabled)
+   Active: active (running) since Wed 2021-02-17 13:37:54 UTC; 1min 42s ago
+     Docs: https://docs.docker.com
+ Main PID: 20902 (dockerd)
+    Tasks: 8
+   Memory: 43.5M
+   CGroup: /system.slice/docker.service
+           └─20902 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+
+systemctl status docker.socket
+● docker.socket - Docker Socket for the API
+   Loaded: loaded (/usr/lib/systemd/system/docker.socket; disabled; vendor preset: disabled)
+   Active: active (running) since Wed 2021-02-17 13:37:53 UTC; 1min 46s ago
+   Listen: /var/run/docker.sock (Stream)
+```
+
+As you see from above output the socket `/var/run/docker.sock` is now available. You can verify that also using:
+```bash
+ls /var/run | grep docker.sock
+docker.sock
+```
+
+Now back to `docker version` the output is different and indicates that the current user does not have permissions to access the socket.
+```bash
+docker version
+Client: Docker Engine - Community
+ Version:           20.10.3
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        48d30b5
+ Built:             Fri Jan 29 14:34:14 2021
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get http://%2Fvar%2Frun%2Fdocker.sock/v1.24/version: dial unix /var/run/docker.sock: connect: permission denied
+```
+
+The reason is that the socket permissins does not allow `vagrant:vagrant` to access it.
+```
+ls -al /var/run/docker.sock
+srw-rw----. 1 root docker 0 Feb 17 13:37 /var/run/docker.sock
+```
+
+To fix this, we have two available options:
+- Elavate permissions using `sudo` everytime `docker` is invoked
+- Add `vagrant` user to `docker` group.
+
+Lets perform the second option.
+
+#### Adding User to docker group
+
+```bash
+sudo usermod -aG docker vagrant
+```
+
+You need to logout and login to apply this change
+```bash
+# Verify the user groups
+groups
+vagrant docker
+```
+
+With this change, user has proper access to invoke `docker version` and retrieve information for client and server.
+```bash
+[vagrant@localhost ~]$ groups
+vagrant docker
+[vagrant@localhost ~]$ docker version
+Client: Docker Engine - Community
+ Version:           20.10.3
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        48d30b5
+ Built:             Fri Jan 29 14:34:14 2021
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.3
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       46229ca
+  Built:            Fri Jan 29 14:32:37 2021
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+```
+
+#### Enable Docker service on boot
+
+Verify the current state and configuration summary of systemctl unit-files for docker:
+```bash
+systemctl list-unit-files | grep docker
+docker.service                                disabled
+docker.socket                                 disabled
+```
+
+To enable both services update the systemctl configuration.
+```bash
+sudo systemctl enable docker
+Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service to /usr/lib/systemd/system/docker.service.
+
+# You can verify that docker.socket and containerd.service are dependencies for docker.service
+cat /etc/systemd/system/multi-user.target.wants/docker.service | grep Requires
+Requires=docker.socket containerd.service
+```
+
+To verify the which unit files are related to docker packages you can use `rpm -ql docker-ce`.
+```bash
+rpm -ql docker-ce
+/usr/bin/docker-init
+/usr/bin/docker-proxy
+/usr/bin/dockerd
+/usr/lib/systemd/system/docker.service
+/usr/lib/systemd/system/docker.socket
+```
+
+You can use this method for other packages that were installed previously.
+
+#### Verification
+
+Reload the VM in order to make sure that docker deamon will start automatically. Use `vagrant reload` from the Host machine.
+Once the machie boots, access it ssh and execute `docker version`.
+```
+vagrant reload
+```
 
 ### Option B - Bash Provisioning
 
