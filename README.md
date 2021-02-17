@@ -14,6 +14,8 @@
       - [Verification](#verification)
     - [Option B - Bash Provisioning](#option-b---bash-provisioning)
       - [Create Virtual Machine](#create-virtual-machine-1)
+    - [Option C - Ansible Provisioning](#option-c---ansible-provisioning)
+      - [Create Virtual Machine](#create-virtual-machine-2)
 
 ## Introduction
 
@@ -296,7 +298,7 @@ vagrant reload
 
 #### Create Virtual Machine
 
-Start by initializing the Vagrantfile with default values using the official [Centos 8 Vagrant box](https://app.vagrantup.com/centos/boxes/8). 
+Start by initializing the Vagrantfile with default values using the [Centos 8 Vagrant box](https://app.vagrantup.com/centos/boxes/8)provided by generic. 
 
 ```bash
 cd installation/centos-8
@@ -376,4 +378,109 @@ Server: Docker Engine - Community
   GitCommit:        de40ad0
 ```
 
+
+### Option C - Ansible Provisioning
+
+#### Create Virtual Machine
+
+Start by initializing the Vagrantfile with default values using the [Ubuntu 20.04 Vagrant box](https://app.vagrantup.com/generic/boxes/ubuntu2004) provided by geenric. 
+
+```bash
+cd installation/ubuntu-20.04
+vagrant init generic/ubuntu2004
+```
+
+Open your favorite code editor and configure provisioning option in Vagrantfile.
+
+```ruby
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/8"
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+```
+
+Save the file, and create a new file `playbook.yml` in same directory. 
+
+```yml
+
+```
+
+It is good practice to verify the playbook syntax with `ansible-playbook playbook.yml --syntax-check`.
+```bash
+[WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
+
+playbook: playbook.yml
+```
+
+With both files ready, start with `vagrant up`.
+
+```bash
+vagrant up
+Bringing machine 'default' up with 'hyperv' provider...
+==> default: Verifying Hyper-V is enabled...
+==> default: Verifying Hyper-V is accessible...
+==> default: Importing a Hyper-V instance
+[ Output omitted for brevity]
+==> default: Machine booted and ready!
+==> default: Running provisioner: ansible...
+    default: Running ansible-playbook...
+
+PLAY [all] *********************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [default]
+
+TASK [install prerequisites] ***************************************************
+changed: [default]
+
+TASK [add apt-key] *************************************************************
+changed: [default]
+
+TASK [add docker repo] *********************************************************
+changed: [default]
+
+TASK [install docker] **********************************************************
+changed: [default]
+
+TASK [add userpermissions] *****************************************************
+changed: [default]
+
+PLAY RECAP *********************************************************************
+default                    : ok=6    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+Once the box is up and running, use `vagrant ssh` and verify that docker was sucessfully installed.
+
+```bash
+vagrant ssh
+docker version
+Client: Docker Engine - Community
+ Version:           20.10.3
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        48d30b5
+ Built:             Fri Jan 29 14:33:21 2021
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.3
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       46229ca
+  Built:            Fri Jan 29 14:31:32 2021
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+```
 
