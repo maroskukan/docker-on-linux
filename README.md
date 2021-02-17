@@ -19,6 +19,7 @@
       - [Create Virtual Machine](#create-virtual-machine-2)
   - [Docker Contexts](#docker-contexts)
     - [Namespaces](#namespaces)
+    - [Contexts](#contexts)
 
 ## Introduction
 
@@ -523,6 +524,28 @@ sudo docker inspect --format {{.State.Pid}} 3af2
 # Enter the namespace for target process 7071
 sudo nsenter --target 7071 --mount --uts --ipc --net --pid /usr/local/bin/bash
 ```
+
+### Contexts
+
+Start by provisioning a `cli-only` installation. 
+
+```bash
+cd installation/cli-only
+vagrant up
+docker info
+Client:
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  app: Docker App (Docker Inc., v0.9.1-beta3)
+  buildx: Build with BuildKit (Docker Inc., v0.5.1-docker)
+
+Server:
+ERROR: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+errors pretty printing info
+```
+
+As expected, there is no docker daemon installed.
 
 
 

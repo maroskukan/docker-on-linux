@@ -1,0 +1,33 @@
+---
+# adopted from https://docs.docker.com/engine/install/ubuntu
+# tested on vagrant box generic/ubuntu2004
+- hosts: all
+  tasks:
+    - name: ensure docker os requirements are met https://docs.docker.com/engine/install/ubuntu#os-requirements
+      assert:
+        that:
+          - ansible_distribution_version in ["16.04", "18.04", "20.04", "20.10"]
+          - ansible_distribution == 'Ubuntu'
+    - name: ensure old docker packages are absent
+      apt:
+        state: absent
+        pkg: docker docker-engine docker.io containerd runc
+    - name: install deps for installing from https repos - per docker docs
+      apt:
+        update_cache: yes
+        pkg:
+          # https://packages.ubuntu.com/focal/all/apt-transport-https/
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+    - name: add docker's key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+    - name: add docker's apt repo
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+    - name: ensure cli only
+      apt:
+        pkg: docker-ce-cli
