@@ -2,6 +2,7 @@
 
 - [docker-on-linux](#docker-on-linux)
   - [Introduction](#introduction)
+  - [Documentation](#documentation)
   - [Installation](#installation)
     - [Option A - Manual Provisioning](#option-a---manual-provisioning)
       - [Create Virtual Machine](#create-virtual-machine)
@@ -16,8 +17,17 @@
       - [Create Virtual Machine](#create-virtual-machine-1)
     - [Option C - Ansible Provisioning](#option-c---ansible-provisioning)
       - [Create Virtual Machine](#create-virtual-machine-2)
+  - [Docker Contexts](#docker-contexts)
+    - [Namespaces](#namespaces)
 
 ## Introduction
+
+## Documentation
+
+- [Namespaces](https://man7.org/linux/man-pages/man7/namespaces.7.html)
+- [Nsenter](https://man7.org/linux/man-pages/man1/nsenter.1.html)
+- [Docker Hub](https://hub.docker.com/)
+
 
 ## Installation
 
@@ -483,4 +493,37 @@ Server: Docker Engine - Community
   Version:          0.19.0
   GitCommit:        de40ad0
 ```
+
+
+## Docker Contexts
+
+Before we start with Docker contexts, lets understand the path that docker command takes to execute action upon a container. By default the following components will be involved:
+
+1. docker command
+2. Unix socket (IPC) to API, root:docker
+3. Docker Engine API (Create container, list images, etc.)
+4. Docker Engine daemon (dockerd) executes incomming API task / queries
+5. Containers (isolated processes) and associated resources such as: images, mounts/filesystems, networking, processes, cgroups, security
+
+Since the architecture is modular, it is possible to swap Unix socket with TCP socket and provide remote access to docker engine API. Before doing so, lets review the fundamental building block of containers - linux namespaces.
+
+### Namespaces
+
+In summary, Docker provides a level of abstraction for underlying linux features such as namespaces. To work with namespaces directly, first create a new container inside previously provisioned Vagrant machine with docker installed.
+```bash
+docker run --rm -it bash
+```
+You will end up inside a docker container. Leave this terminal window open.
+
+Back on VM with docker installed, open a new terminal and explore the use of `nsenter` command.
+```bash
+# Retrieve the Process ID for Container ID 3af2....
+sudo docker inspect --format {{.State.Pid}} 3af2
+7071
+# Enter the namespace for target process 7071
+sudo nsenter --target 7071 --mount --uts --ipc --net --pid /usr/local/bin/bash
+```
+
+
+
 
