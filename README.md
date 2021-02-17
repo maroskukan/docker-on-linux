@@ -505,7 +505,7 @@ Before we start with Docker contexts, lets understand the path that docker comma
 4. Docker Engine daemon (dockerd) executes incomming API task / queries
 5. Containers (isolated processes) and associated resources such as: images, mounts/filesystems, networking, processes, cgroups, security
 
-Since the architecture is modular, it is possible to swap Unix socket with TCP socket and provide remote access to docker engine API. Before doing so, lets review the fundamental building block of containers - linux namespaces.
+Since the architecture is modular, it is possible to use multiple docker enginer API behind an Unix or TCP socket and therefore provide remote access to multiple (local, test, prod) docker engine daemons. Before doing so, lets review the fundamental building block of containers - linux namespaces.
 
 ### Namespaces
 
