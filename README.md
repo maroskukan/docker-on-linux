@@ -13,7 +13,7 @@
       - [Enable Docker service on boot](#enable-docker-service-on-boot)
       - [Verification](#verification)
     - [Option B - Bash Provisioning](#option-b---bash-provisioning)
-    - [Option C - Ansible Provisioning](#option-c---ansible-provisioning)
+      - [Create Virtual Machine](#create-virtual-machine-1)
 
 ## Introduction
 
@@ -291,7 +291,89 @@ Once the machie boots, access it ssh and execute `docker version`.
 vagrant reload
 ```
 
+
 ### Option B - Bash Provisioning
 
-### Option C - Ansible Provisioning
+#### Create Virtual Machine
+
+Start by initializing the Vagrantfile with default values using the official [Centos 8 Vagrant box](https://app.vagrantup.com/centos/boxes/8). 
+
+```bash
+cd installation/centos-8
+vagrant init centos/8
+```
+
+Open your favorite code editor and configure provisioning option in Vagrantfile.
+
+```ruby
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/8"
+  config.vm.provision "shell", path: "provision.sh"
+```
+
+Save the file, and create a new file `provision.sh` in same directory. You can leverage the script that is available at [get.docker](https://get.docker.com/) or you can write your own custom script. One modifycation I made was to start service automatically.
+
+With both files ready, start with `vagrant up`.
+
+```bash
+vagrant up
+Bringing machine 'default' up with 'hyperv' provider...                                                                              ==> default: Verifying Hyper-V is enabled...
+==> default: Verifying Hyper-V is accessible...
+==> default: Importing a Hyper-V instance
+    default: Creating and registering the VM...
+    default: Successfully imported VM
+[ Output omitted for brevity]
+==> default: Machine booted and ready!
+==> default: Running provisioner: shell...
+    default: Running: /tmp/vagrant-shell20210217-18571-ai2mvr.sh
+    default: # Executing docker install script, commit: 3d8fe77c2c46c5b7571f94b42793905e5b3e42e4
+    default: + sh -c 'yum install -y -q yum-utils'
+    default: + sh -c 'yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo'
+    default: Adding repo from: https://download.docker.com/linux/centos/docker-ce.repo
+    default: + '[' stable '!=' stable ']'
+    default: + sh -c 'yum makecache'
+    default: CentOS Linux 8 - AppStream                       26 kB/s | 4.3 kB     00:00
+    default: CentOS Linux 8 - BaseOS                          23 kB/s | 3.9 kB     00:00
+    default: CentOS Linux 8 - Extras                         8.7 kB/s | 1.5 kB     00:00
+    default: Docker CE Stable - x86_64                        30 kB/s | 9.2 kB     00:00
+    default: Extra Packages for Enterprise Linux Modular 8 - 122 kB/s |  33 kB     00:00
+    default: Extra Packages for Enterprise Linux 8 - x86_64   93 kB/s |  23 kB     00:00
+    default: Metadata cache created.
+```
+
+Once the box is up and running, use `vagrant ssh` and verify that docker was sucessfully installed.
+
+```bash
+vagrant ssh
+docker version
+Client: Docker Engine - Community
+ Version:           20.10.3
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        48d30b5
+ Built:             Fri Jan 29 14:33:08 2021
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.3
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       46229ca
+  Built:            Fri Jan 29 14:31:25 2021
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+```
+
 
