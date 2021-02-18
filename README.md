@@ -20,6 +20,8 @@
   - [Docker Contexts](#docker-contexts)
     - [Namespaces](#namespaces)
     - [Contexts](#contexts)
+    - [Docker Snap](#docker-snap)
+    - [Docker Binaries](#docker-binaries)
 
 ## Introduction
 
@@ -28,6 +30,8 @@
 - [Namespaces](https://man7.org/linux/man-pages/man7/namespaces.7.html)
 - [Nsenter](https://man7.org/linux/man-pages/man1/nsenter.1.html)
 - [Docker Hub](https://hub.docker.com/)
+- [Docker Binaries](https://docs.docker.com/engine/install/binaries/)
+- [Snapcraft Docker](https://snapcraft.io/docker)
 
 
 ## Installation
@@ -527,7 +531,7 @@ sudo nsenter --target 7071 --mount --uts --ipc --net --pid /usr/local/bin/bash
 
 ### Contexts
 
-Start by provisioning a `cli-only` installation. 
+Start by provisioning and verify a `cli-only` installation. 
 
 ```bash
 cd installation/cli-only
@@ -549,7 +553,8 @@ errors pretty printing info
 
 As expected, there is no docker daemon installed.
 
-Provision full docker install on `getdc`.
+Provision and verify full docker install on `getdc`.
+
 ```bash
 cd installation/getdc
 vagrant up
@@ -586,6 +591,126 @@ Server: Docker Engine - Community
   GitCommit:        de40ad0
   ```
 
+Lets jump back to `cli-only` VM by using `vagrant ssh` in the correct folder. 
 
+Verify the default docker context.
+
+```bash
+vagrant ssh
+# Verify the context configuration
+docker context ls
+NAME        DESCRIPTION                               DOCKER ENDPOINT               KUBERNETES ENDPOINT   ORCHESTRATOR
+default *   Current DOCKER_HOST based configuration   unix:///var/run/docker.sock                         swarm
+
+# Inspect the context configuration
+docker context inspect
+[
+    {
+        "Name": "default",
+        "Metadata": {
+            "StackOrchestrator": "swarm"
+        },
+        "Endpoints": {
+            "docker": {
+                "Host": "unix:///var/run/docker.sock",
+                "SkipTLSVerify": false
+            }
+        },
+        "TLSMaterial": {},
+        "Storage": {
+            "MetadataPath": "\u003cIN MEMORY\u003e",
+            "TLSPath": "\u003cIN MEMORY\u003e"
+        }
+    }
+]
+```
+
+As you can see from above output, the default context points to Unix socket, which in this case is not available as we did not install docker daemon this machine.
+
+Lets distroy these two machines by using `vagrant destroy --force`.
+
+### Docker Snap
+
+Docker is also available as [snap package](https://snapcraft.io/docker) provided by `snapcraft`. A Vagrantfile with the shell provision script is available at `installation/snappy` folder. Start the machine with `vagrant up`, once prepared enter the machine `vagrant ssh` and verify that docker is installed.
+
+```bash
+docker version
+Client:
+ Version:           19.03.13
+ API version:       1.40
+ Go version:        go1.13.15
+ Git commit:        cd8016b6bc
+ Built:             Fri Feb  5 15:56:39 2021
+ OS/Arch:           linux/amd64
+ Experimental:      false
+
+Server:
+ Engine:
+  Version:          19.03.13
+  API version:      1.40 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       bd33bbf
+...
+[ Output omitted for brevity ]
+...
+```
+
+### Docker Binaries
+
+Installing docker engine from [binaries](https://docs.docker.com/engine/install/binaries/) is yet another way how to accomplish what we done in previous steps. 
+
+A Vagrantfile with a shell provision script is avaibale in the `installation/binaries` folder. Start the machine with `vagrant up`, once prepared enter the machine `vagrant ssh`
+
+You can change the default docker daemon configuration by adding arguments such as:
+```bash
+# Verify which argument deals with Deamon socket configuration
+dockerd --help | grep Daemon
+      --config-file string                      Daemon configuration file (default "/etc/docker/daemon.json")
+  -H, --host list                               Daemon socket(s) to connect to
+
+# Start the dockerd
+sudo dockerd -H tcp://
+...
+[ Output omitted for brevity ]
+...
+INFO[2021-02-18T18:03:17.648802110Z] Daemon has completed initialization
+INFO[2021-02-18T18:03:17.662811079Z] API listen on 127.0.0.1:2375
+```
+
+Using a different shell window, you can verify the connection locally.
+```bash
+# Verify version with Host option
+docker -H tcp:// version
+Client: Docker Engine - Community
+ Version:           20.10.2
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        2291f61
+ Built:             Mon Dec 28 16:11:26 2020
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.2
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       8891c58
+...
+[ Output omitted for brevity ]
+...
+# Verify context with Host option
+docker -H tcp:// context ls
+NAME        DESCRIPTION                               DOCKER ENDPOINT        KUBERNETES ENDPOINT   ORCHESTRATOR
+default *   Current DOCKER_HOST based configuration   tcp://localhost:2375                         swarm
+```  
+
+You can also use `DOCKER_HOST` variable with `docker` client like this:
+```bash
+# Using variable one time
+DOCKER_HOST=tcp:// docker context ls
+DOCKER_HOST=tcp:// docker version
+```
 
 
