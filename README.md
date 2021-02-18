@@ -22,6 +22,8 @@
     - [Contexts](#contexts)
     - [Docker Snap](#docker-snap)
     - [Docker Binaries](#docker-binaries)
+    - [Docker remote connection](#docker-remote-connection)
+      - [Running remote containers](#running-remote-containers)
 
 ## Introduction
 
@@ -713,4 +715,133 @@ DOCKER_HOST=tcp:// docker context ls
 DOCKER_HOST=tcp:// docker version
 ```
 
+The local connection over TCP at `127.0.0.1:2375` will now work. To enable remote connection, we need to change the configuration to bind to all addresses. Please note however this method is **insecure**.
 
+```basg
+sudo dockerd -H tcp://0.0.0.0:2375
+...
+[ Output omitted for brevity ]
+...
+INFO[2021-02-18T18:54:37.180895456Z] Daemon has completed initialization
+INFO[2021-02-18T18:54:37.194794629Z] API listen on [::]:2375
+```
+
+### Docker remote connection
+
+Back on `snappy` client machine, configure the `DOCKER_HOST` to point to remote `binaries` docker server. Then validate the connection.
+
+```bash
+# Update environment variable
+export DOCKER_HOST=tcp://192.168.137.39:2375
+
+# Verify that you can connect to remote docker server
+docker version
+Client:
+ Version:           19.03.13
+ API version:       1.40
+ Go version:        go1.13.15
+ Git commit:        cd8016b6bc
+ Built:             Fri Feb  5 15:56:39 2021
+ OS/Arch:           linux/amd64
+ Experimental:      false
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.2
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       8891c58
+  Built:            Mon Dec 28 16:15:23 2020
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          v1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+```
+
+#### Running remote containers
+
+Now you can run container on remote docker server host using docker client on `snappy` machine.
+
+```bash
+# Run container on remote host
+docker run --rm -d -p 8080:80 nginx
+Unable to find image 'nginx:latest' locally
+latest: Pulling from library/nginx
+45b42c59be33: Pull complete
+8acc495f1d91: Pull complete
+ec3bd7de90d7: Pull complete
+19e2441aeeab: Pull complete
+f5a38c5f8d4e: Pull complete
+83500d851118: Pull complete
+Digest: sha256:f3693fe50d5b1df1ecd315d54813a77afd56b0245a404055a946574deb6b34fc
+Status: Downloaded newer image for nginx:latest
+8fa3f916772a2326a340a9f1935645b00f803ee1942dde4a4c222f9d7902610a
+
+# Verify the container
+curl --head 192.168.137.39:8080
+HTTP/1.1 200 OK
+Server: nginx/1.19.7
+Date: Thu, 18 Feb 2021 19:02:59 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Tue, 16 Feb 2021 15:57:18 GMT
+Connection: keep-alive
+ETag: "602beb5e-264"
+Accept-Ranges: bytes
+```
+
+To avoid specifying connection details every time you invoke a docker command. You can create context for each connection. 
+
+```bash
+docker context create binaries --description "Remote testing environemnt" --docker "host=tcp://192.168.137.39:2375"
+binaries
+Successfully created context "binaries"
+
+# Verify the new context
+docker context ls
+NAME                DESCRIPTION                               DOCKER ENDPOINT               KUBERNETES ENDPOINT   ORCHESTRATOR
+binaries            Remote testing environemnt                tcp://192.168.137.39:2375
+default *           Current DOCKER_HOST based configuration   unix:///var/run/docker.sock                         swarm
+```
+
+To to switch from `default` to `binaries` context, use the following command.
+```bash
+docker context use binaries
+binaries
+Current context is now "binaries"
+```
+
+Now every docker client command will by target to the remote docker host.
+```bash
+# Available images
+docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+nginx               latest              35c43ace9216        24 hours ago        133MB
+
+# Running containers
+docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                  NAMES
+8fa3f916772a        nginx               "/docker-entrypoint.…"   15 minutes ago      Up 15 minutes       0.0.0.0:8080->80/tcp   dreamy_williams
+
+# Switch to default (local) context
+docker context use default
+default
+Current context is now "default"
+```
+
+To export the newly created context, use `export` arguemnt.
+```bash
+docker context export binaries
+Written file "binaries.dockercontext"
+# Display content
+
+```
+
+You can later import this connection.
