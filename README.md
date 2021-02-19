@@ -25,7 +25,8 @@
     - [Docker remote connection](#docker-remote-connection)
       - [Running remote containers](#running-remote-containers)
   - [Securing Remote Access](#securing-remote-access)
-    - [Using SSH](#using-ssh)
+    - [Using Unix Socket with SSH](#using-unix-socket-with-ssh)
+    - [Using TCP Socket without SSL](#using-tcp-socket-without-ssl)
 
 ## Introduction
 
@@ -848,7 +849,7 @@ You can later import this connection.
 
 ## Securing Remote Access
 
-### Using SSH 
+### Using Unix Socket with SSH 
 
 There are multiple ways how to secure access to dockerd deamon running on remote host. For example you can start daemon on server machine with default configuration and leverage SSH forwarding.
 ```bash
@@ -887,7 +888,7 @@ docker context create binaries --docker "host=ssh://vagrant@binaries"
 binaries
 Successfully created context "binaries"
 
-# 
+# Switch to newly created context
 docker context use binaries
 
 # Verify remote server configuration
@@ -948,7 +949,71 @@ ETag: "602beb5e-264"
 Accept-Ranges: bytes 
 ```
 
+### Using TCP Socket without SSL
 
+To demostrate the use of using Unix socket with SSL, lets access the `installation/getdc` VM. 
+
+This system uses systemctl to manage docker daemon. First verify the deamon status. And docker socket unit file.
+
+```bash
+# Daemon status
+systemctl status docker
+● docker.service - Docker Application Container Engine
+     Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
+     Active: active (running) since Fri 2021-02-19 13:28:57 UTC; 44s ago
+TriggeredBy: ● docker.socket
+       Docs: https://docs.docker.com
+   Main PID: 9196 (dockerd)
+      Tasks: 10
+     Memory: 41.4M
+     CGroup: /system.slice/docker.service
+             └─9196 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+# Unit file
+sudo systemctl cat docker.socket
+# /lib/systemd/system/docker.socket
+[Unit]
+Description=Docker Socket for the API
+
+[Socket]
+ListenStream=/var/run/docker.sock
+SocketMode=0660
+SocketUser=root
+SocketGroup=docker
+
+[Install]
+WantedBy=sockets.target
+```
+
+Next, adjust the socket unit file. 
+```bash
+sudo systemctl edit docker.socket
+```
+
+```
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:2375
+```
+
+Restart and verify the socket unit.
+```bash
+# Restart the socket
+sudo systemctl restart docker.socket
+# Verify the socket
+● docker.socket - Docker Socket for the API
+     Loaded: loaded (/lib/systemd/system/docker.socket; enabled; vendor preset: enabled)
+    Drop-In: /etc/systemd/system/docker.socket.d
+             └─override.conf
+     Active: active (running) since Fri 2021-02-19 13:42:41 UTC; 34s ago
+   Triggers: ● docker.service
+     Listen: 0.0.0.0:2375 (Stream)
+      Tasks: 0 (limit: 2204)
+     Memory: 60.0K
+     CGroup: /system.slice/docker.socket
+
+Feb 19 13:42:41 getdc systemd[1]: Starting Docker Socket for the API.
+Feb 19 13:42:41 getdc systemd[1]: Listening on Docker Socket for the API.
+```
 
 
 
