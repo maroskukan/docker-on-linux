@@ -1013,7 +1013,26 @@ sudo systemctl restart docker.socket
 
 Feb 19 13:42:41 getdc systemd[1]: Starting Docker Socket for the API.
 Feb 19 13:42:41 getdc systemd[1]: Listening on Docker Socket for the API.
+
+# Verify with docker client
+docker -H tcp:// version | grep Server -A17
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.3
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       46229ca
+  Built:            Fri Jan 29 14:31:32 2021
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
 ```
-
-
 
