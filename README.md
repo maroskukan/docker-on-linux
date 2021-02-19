@@ -922,12 +922,20 @@ Server: Docker Engine - Community
   Version:          0.19.0
   GitCommit:        de40ad0
 
+# Start a container
+docker run --rm -d -p 8080:80 nginx
+
+# Verify images
+docker image ls
+REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+nginx        latest    35c43ace9216   42 hours ago   133MB
+
 # Verify running containers at remote machine
-docker ps                                                  ✔ │ 14:17:37 
+docker ps
 CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS                  NAMES
 215e19f876c1   nginx     "/docker-entrypoint.…"   27 seconds ago   Up 24 seconds   0.0.0.0:8080->80/tcp   optimistic_driscoll
 
-# Verify the serivce is running
+# Verify the service is running
 curl 192.168.137.39:8080
 HTTP/1.1 200 OK
 Server: nginx/1.19.7
