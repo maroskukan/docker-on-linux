@@ -886,11 +886,61 @@ To create a docker context for such connection, you can execute the following on
 docker context create binaries --docker "host=ssh://vagrant@binaries"
 binaries
 Successfully created context "binaries"
-#
+
+# 
 docker context use binaries
+
+# Verify remote server configuration
+docker version
+Client: Docker Engine - Community
+ Cloud integration: 1.0.7
+ Version:           20.10.2
+ API version:       1.41
+ Go version:        go1.13.15
+ Git commit:        2291f61
+ Built:             Mon Dec 28 16:17:34 2020
+ OS/Arch:           linux/amd64
+ Context:           binaries
+ Experimental:      true
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          20.10.2
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.13.15
+  Git commit:       8891c58
+  Built:            Mon Dec 28 16:15:23 2020
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          v1.4.3
+  GitCommit:        269548fa27e0089a8b8278fc4fc781d7f65a939b
+ runc:
+  Version:          1.0.0-rc92
+  GitCommit:        ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+
+# Verify running containers at remote machine
+docker ps                                                  ✔ │ 14:17:37 
+CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS                  NAMES
+215e19f876c1   nginx     "/docker-entrypoint.…"   27 seconds ago   Up 24 seconds   0.0.0.0:8080->80/tcp   optimistic_driscoll
+
+# Verify the serivce is running
+curl 192.168.137.39:8080
+HTTP/1.1 200 OK
+Server: nginx/1.19.7
+Date: Fri, 19 Feb 2021 13:20:13 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Tue, 16 Feb 2021 15:57:18 GMT
+Connection: keep-alive
+ETag: "602beb5e-264"
+Accept-Ranges: bytes 
 ```
 
-*Warning: The above configuration specifying ssh:// endpoint does not work with WSL2 integrated docker client*
+
 
 
 
