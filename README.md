@@ -26,7 +26,10 @@
       - [Running remote containers](#running-remote-containers)
   - [Securing Remote Access](#securing-remote-access)
     - [Using Unix Socket with SSH](#using-unix-socket-with-ssh)
-    - [Using TCP Socket without SSL](#using-tcp-socket-without-ssl)
+    - [Using TCP Socket without TLS](#using-tcp-socket-without-tls)
+    - [Using TCP Socket with TLS](#using-tcp-socket-with-tls)
+      - [Configuring CA](#configuring-ca)
+      - [Managing Certificates](#managing-certificates)
 
 ## Introduction
 
@@ -949,7 +952,7 @@ ETag: "602beb5e-264"
 Accept-Ranges: bytes 
 ```
 
-### Using TCP Socket without SSL
+### Using TCP Socket without TLS
 
 To demostrate the use of using Unix socket with SSL, lets access the `installation/getdc` VM. 
 
@@ -1038,4 +1041,101 @@ Server: Docker Engine - Community
 
 Exposing unprotected API access to docker deamon comes with great security implication. Anybody who has TCP reachability to the exposed port can perform any sort of operation. From pulling down images, launching containers and retrieve information about server. More example of this capability can be found in `scrips/api-security.sh` file.
 
+
+### Using TCP Socket with TLS
+
+To demostrate the process of securing access to docker API we are going to leverage a new Vagrant box available at `installation/secured`.
+
+```bash
+cd installation/secured
+vagrant up
+...
+[ Output omitted for brevity ]
+...
+```
+
+#### Configuring CA
+
+Once the machine boots and completes the provisioning scripts, log in using `vagrant ssh` and start with create CA configuration.
+
+```bash
+vagrant ssh
+# Start mkcert and observe the output
+mkcert
+Created a new local CA 💥
+Note: the local CA is not installed in the system trust store.
+Run "mkcert -install" for certificates to be trusted automatically ⚠️
+Usage of mkcert:
+
+        $ mkcert -install
+        Install the local CA in the system trust store.
+
+        $ mkcert example.org
+        Generate "example.org.pem" and "example.org-key.pem".
+
+        $ mkcert example.com myapp.dev localhost 127.0.0.1 ::1
+        Generate "example.com+4.pem" and "example.com+4-key.pem".
+
+        $ mkcert "*.example.it"
+        Generate "_wildcard.example.it.pem" and "_wildcard.example.it-key.pem".
+
+        $ mkcert -uninstall
+        Uninstall the local CA (but do not delete it).
+
+For more options, run "mkcert -help".
+
+# Location of CA Certification and key
+ls $(mkcert -CAROOT)
+```
+
+#### Managing Certificates
+
+Generate new certificate for server
+
+```bash
+# Generate certificate for Docker server
+mkcert secured $(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1) localhost 127.0.0.1 
+Note: the local CA is not installed in the system trust store.
+Run "mkcert -install" for certificates to be trusted automatically ⚠️
+
+Created a new certificate valid for the following names 📜
+ - "secured"
+ - "192.168.137.21"
+ - "localhost"
+ - "127.0.0.1"
+
+The certificate is at "./secured+3.pem" and the key at "./secured+3-key.pem" ✅
+
+It will expire on 22 May 2023 🗓
+```
+
+Generate new certificate for client(s). In this case its the host machine you are using to access Vagrant boxes.
+
+```bash
+# Generate certificate for Docker client #1
+DOCKER_CLIENT=`echo $SSH_CLIENT | awk '{ print $1 }'`
+mkcert -client $DOCKER_CLIENT
+Note: the local CA is not installed in the system trust store.
+Run "mkcert -install" for certificates to be trusted automatically ⚠️
+
+Created a new certificate valid for the following names 📜
+ - "192.168.137.1"
+
+The certificate is at "./192.168.137.1-client.pem" and the key at "./192.168.137.1-client-key.pem" ✅
+
+It will expire on 22 May 2023 🗓
+
+# Generate certificate for Docker client #2
+mkcert -client 127.0.0.1 localhost
+Note: the local CA is not installed in the system trust store.
+Run "mkcert -install" for certificates to be trusted automatically ⚠️
+
+Created a new certificate valid for the following names 📜
+ - "127.0.0.1"
+ - "localhost"
+
+The certificate is at "./127.0.0.1+1-client.pem" and the key at "./127.0.0.1+1-client-key.pem" ✅
+
+It will expire on 22 May 2023 🗓
+```
 

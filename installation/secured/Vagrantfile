@@ -1,0 +1,9 @@
+Vagrant.configure("2") do |config|
+  config.vm.define "secured" do |secured|
+    secured.vm.box = "generic/ubuntu2004"
+    secured.vm.hostname = "secured"
+  end
+
+  config.vm.provision "shell", path: "install.from.binaries.sh", name: "install docker"
+  config.vm.provision "shell", path: "install.mkcert.sh", name: "install mkcert"
+end
