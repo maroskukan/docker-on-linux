@@ -30,6 +30,10 @@
     - [Using TCP Socket with TLS](#using-tcp-socket-with-tls)
       - [Configuring CA](#configuring-ca)
       - [Managing Certificates](#managing-certificates)
+      - [Configuring docker deamon](#configuring-docker-deamon)
+      - [Testing locally with docker client](#testing-locally-with-docker-client)
+      - [Testing locally with curl](#testing-locally-with-curl)
+      - [Testing remotely with docker client](#testing-remotely-with-docker-client)
 
 ## Introduction
 
@@ -1137,5 +1141,223 @@ Created a new certificate valid for the following names 📜
 The certificate is at "./127.0.0.1+1-client.pem" and the key at "./127.0.0.1+1-client-key.pem" ✅
 
 It will expire on 22 May 2023 🗓
+```
+
+#### Configuring docker deamon
+
+While still on the `secured` machine, start the docker daemon with host arguments to enable TSL.
+```bash
+# Start docker deamon with TLS
+sudo dockerd --tlsverify \
+        --tlscacert $(mkcert -CAROOT)/rootCA.pem \
+        --tlscert ./secured+3.pem \
+        --tlskey ./secured+3-key.pem \
+        -H 0.0.0.0:2376
+...
+INFO[2021-02-22T12:42:19.980260555Z] Daemon has completed initialization
+INFO[2021-02-22T12:42:20.001613344Z] API listen on [::]:2376
+...
+```
+
+#### Testing locally with docker client
+
+Open a new windows on the `secured` machine, and verify that you can connect to deamon from local client.
+```bash
+docker --tlsverify \
+       --tlscacert $(mkcert -CAROOT)/rootCA.pem \
+       --tlscert ./127.0.0.1+1-client.pem \
+       --tlskey ./127.0.0.1+1-client-key.pem \
+       -H 127.0.0.1:2376 \
+       info
+
+Client:
+ Context:    default
+ Debug Mode: false
+
+# The following output should be returned
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 20.10.2
+ Storage Driver: overlay2
+...
+```
+
+Finally to simplify the docker client configuration, create a new context:
+```bash
+docker context create secured --description "Secured connection from localhost" --docker "host=tcp://127.0.0.1:2376,ca=$(mkcert -CAROOT)/rootCA.pem,cert=./127.0.0.1+1-client.pem,key=./127.0.0.1+1-client-key.pem"
+secured
+Successfully created context "secured"
+
+# Retry with context
+docker context use secured
+docker info
+Client:
+ Context:    secured
+ Debug Mode: false
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 20.10.2
+ Storage Driver: overlay2
+```
+
+#### Testing locally with curl
+
+To confirm that the API is secured, retry the curl requests described in `scripts/api-security.sh`.
+
+```bash
+# Try simple GET request to HTTP Server
+curl http://127.0.0.1:2376/info
+Client sent an HTTP request to an HTTPS server.
+
+# Try simple GET request to HTTPS Server
+curl https://127.0.0.1:2376/info
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.haxx.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+
+# Try with CA Certificate
+curl --cacert $(mkcert -CAROOT)/rootCA.pem \
+     https://127.0.0.1:2376/info
+curl: (56) OpenSSL SSL_read: error:14094412:SSL routines:ssl3_read_bytes:sslv3 alert bad certificate, errno 0
+
+# Try with CA Certificate and Client Certificate
+curl --cacert $(mkcert -CAROOT)/rootCA.pem \
+     --cert ./127.0.0.1+1-client.pem \
+     --key ./127.0.0.1+1-client-key.pem \
+     --silent \
+     https://127.0.0.1:2376/info
+
+# Output 
+{"ID":"QYSP:2MLM:FTY2:BUE4:3CV3:CSOP:T3DO:N2TU:MNS7:MSRR:Q5CA:CSIK","Containers":0,"ContainersRunning":0,"ContainersPaused":0,"ContainersStopped":0,"Images":0,"Driver":"overlay2","DriverStatus":[["Backing Filesystem","extfs"],["Supports d_type","true"],["Native Overlay Diff","true"]],"Plugins":{"Volume":["local"],"Network":["bridge
+...
+```
+
+In the above example, by using `cacert` option client is verifying the server certificate. It is not mandatory, and can be skipped if `--insecure` option is used:
+```bash
+curl --insecure \
+     --cert ./127.0.0.1+1-client.pem \
+     --key ./127.0.0.1+1-client-key.pem \
+     --silent \
+     https://127.0.0.1:2376/info
+
+# Output
+{"ID":"QYSP:2MLM:FTY2:BUE4:3CV3:CSOP:T3DO:N2TU:MNS7:MSRR:Q5CA:CSIK","Containers":0,"ContainersRunning":0,"ContainersPaused":0,"ContainersStopped":0,"Images":0,"Driver":"overlay2","DriverStatus":[["Backing Filesystem","extfs"],["Supports d_type","true"],["Native Overlay Diff","true"]],"Plugins":{"Volume":["local"],"Network":["bridge
+...
+```
+
+#### Testing remotely with docker client
+
+In the [Managing Certificates](Managing-Certificates) section, you generated certificate and key for the host machine. Now its time to test this credentials agains the docker server running on `secured` vagrant machine.
+
+Start by gettings these generated credentials to your host machine.
+```bash
+cd installation/secured
+
+# Generate SSH config 
+vagrant ssh-config > ~/.ssh/vagrants/secured.config
+
+# Download CA Certificate and Client Certificate and key
+scp -r vagrant@secured:~/.local/share/mkcert/rootCA.pem .
+scp -r vagrant@secured:~/192.168.137.1-client.pem .
+scp -r vagrant@secured:~/192.168.137.1-client-key.pem .
+
+# Verify with docker client
+SECURED_IP=192.168.137.21
+docker --tlsverify \
+       --tlscacert ./rootCA.pem \
+       --tlscert ./192.168.137.1-client.pem \
+       --tlskey ./192.168.137.1-client-key.pem \
+       -H ${SECURED_IP}:2376 \
+       info
+
+Client:
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  app: Docker App (Docker Inc., v0.9.1-beta3)
+  buildx: Build with BuildKit (Docker Inc., v0.5.1-docker)
+  scan: Docker Scan (Docker Inc., v0.5.0)
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+
+...
+# Verify with curl
+SECURED_IP=192.168.137.21
+curl --cacert ./rootCA.pem \
+     --cert ./192.168.137.1-client.pem \
+     --key ./192.168.137.1-client-key.pem \
+     --silent \
+     https://$SECURED_IP:2376/info \
+     | jq
+
+"ID": "QYSP:2MLM:FTY2:BUE4:3CV3:CSOP:T3DO:N2TU:MNS7:MSRR:Q5CA:CSIK",
+  "Containers": 0,
+  "ContainersRunning": 0,
+  "ContainersPaused": 0,
+  "ContainersStopped": 0,
+  "Images": 0,
+  "Driver": "overlay2",
+  "DriverStatus": [
+    [
+      "Backing Filesystem",
+      "extfs"
+    ],
+    [
+      "Supports d_type",
+      "true"
+    ],
+    [
+      "Native Overlay Diff",
+      "true"
+    ]
+...
+```
+
+Again, you can configure `docker context` to simplify the usage.
+
+```bash
+docker context create secured \
+--description "Secured connection from remote client" \
+--docker "host=tcp://$SECURED_IP:2376,ca=./rootCA.pem,cert=./192.168.137.1-client.pem,key=./192.168.137.1-client-key.pem"
+secured
+Successfully created context "secured"
+
+# Use the new context
+docker context use secured
+
+# Verify the configuration
+docker info
+Client:
+ Context:    secured
+ Debug Mode: false
+ Plugins:
+  app: Docker App (Docker Inc., v0.9.1-beta3)
+  buildx: Build with BuildKit (Docker Inc., v0.5.1-docker)
+  scan: Docker Scan (Docker Inc., v0.5.0)
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 20.10.2
 ```
 
