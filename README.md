@@ -34,6 +34,8 @@
       - [Testing locally with docker client](#testing-locally-with-docker-client)
       - [Testing locally with curl](#testing-locally-with-curl)
       - [Testing remotely with docker client](#testing-remotely-with-docker-client)
+      - [Testing remotely with curl](#testing-remotely-with-curl)
+      - [Creating docker context](#creating-docker-context)
 
 ## Introduction
 
@@ -1298,6 +1300,11 @@ Server:
  Images: 0
 
 ...
+```
+
+#### Testing remotely with curl
+
+```bash
 # Verify with curl
 SECURED_IP=192.168.137.21
 curl --cacert ./rootCA.pem \
@@ -1329,6 +1336,8 @@ curl --cacert ./rootCA.pem \
     ]
 ...
 ```
+
+#### Creating docker context 
 
 Again, you can configure `docker context` to simplify the usage.
 
