@@ -1036,3 +1036,6 @@ Server: Docker Engine - Community
   GitCommit:        de40ad0
 ```
 
+Exposing unprotected API access to docker deamon comes with great security implication. Anybody who has TCP reachability to the exposed port can perform any sort of operation. From pulling down images, launching containers and retrieve information about server. More example of this capability can be found in `scrips/api-security.sh` file.
+
+
