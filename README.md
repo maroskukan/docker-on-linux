@@ -1348,10 +1348,38 @@ docker context create secured \
 secured
 Successfully created context "secured"
 
+# Inspect the context
+docekr context inspect secured
+[
+    {
+        "Name": "secured",
+        "Metadata": {
+            "Description": "Secured connection from remote client"
+        },
+        "Endpoints": {
+            "docker": {
+                "Host": "tcp://192.168.137.21:2376",
+                "SkipTLSVerify": false
+            }
+        },
+        "TLSMaterial": {
+            "docker": [
+                "ca.pem",
+                "cert.pem",
+                "key.pem"
+            ]
+        },
+        "Storage": {
+            "MetadataPath": "/home/maros/.docker/contexts/meta/a5bb1667d72ced57ff234e0aa4b095a6eff34145ebc1932f5f68110a3cc12785",
+            "TLSPath": "/home/maros/.docker/contexts/tls/a5bb1667d72ced57ff234e0aa4b095a6eff34145ebc1932f5f68110a3cc12785"
+        }
+    }
+]
+
 # Use the new context
 docker context use secured
 
-# Verify the configuration
+# Verify the connection
 docker info
 Client:
  Context:    secured
@@ -1368,5 +1396,8 @@ Server:
   Stopped: 0
  Images: 0
  Server Version: 20.10.2
+
+# Pull image to remote server
+docker pull bash
 ```
 
