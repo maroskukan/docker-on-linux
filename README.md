@@ -38,7 +38,9 @@
       - [Creating docker context](#creating-docker-context)
   - [Containerd](#containerd)
     - [Installation](#installation-1)
-    - [Configuration](#configuration)
+    - [Default configuration](#default-configuration)
+    - [Starting daemon](#starting-daemon)
+    - [Updating daemon configuration](#updating-daemon-configuration)
 
 ## Introduction
 
@@ -1468,7 +1470,7 @@ containerd daemon in the foreground.
 
 As you can see from the above output, `ctr` is a client application that communicates to `containerd`. Containerd then talks to `runc`, which is a CLI tool for spawning and running containers according to the OCI specification.
 
-### Configuration
+### Default configuration
 
 Start by retrieving the default and current container configuration, including the socket address.
 ```bash
@@ -1482,6 +1484,107 @@ containerd config dump
 # Below example uses diff with process substitution
 diff <(containerd config default) <(containerd config dump)
 ```
+
+### Starting daemon
+
+Start the `containerd` daemon. 
+```bash
+sudo containerd
+INFO[2021-03-22T15:36:58.214505626Z] starting containerd                           revision=05f951a3781f4f2c1911b05e61c160e9c30eaa8e version=v1.4.4
+INFO[2021-03-22T15:36:58.232859205Z] loading plugin "io.containerd.content.v1.content"...  type=io.containerd.content.v1
+INFO[2021-03-22T15:36:58.233054575Z] loading plugin "io.containerd.snapshotter.v1.aufs"...  type=io.containerd.snapshotter.v1
+INFO[2021-03-22T15:36:58.250808054Z] loading plugin "io.containerd.snapshotter.v1.btrfs"...  type=io.containerd.snapshotter.v1
+INFO[2021-03-22T15:36:58.251140433Z] skip loading plugin "io.containerd.snapshotter.v1.btrfs"...  error="path /var/lib/containerd/io.containerd.snapshotter.v1.btrfs (ext4) must be a btrfs filesystem to be used with the btrfs snapshotter: skip plugin" type=io.containerd.snapshotter.v1
+INFO[2021-03-22T15:36:58.251173611Z] loading plugin "io.containerd.snapshotter.v1.devmapper"...  type=io.containerd.snapshotter.v1
+# Output omiited
+INFO[2021-03-22T15:36:58.262501168Z] containerd successfully booted in 0.048705s
+INFO[2021-03-22T15:36:58.264242909Z] Start subscribing containerd event
+INFO[2021-03-22T15:36:58.264879085Z] Start recovering state
+INFO[2021-03-22T15:36:58.264986813Z] Start event monitor
+INFO[2021-03-22T15:36:58.265031084Z] Start snapshots syncer
+INFO[2021-03-22T15:36:58.265069358Z] Start cni network conf syncer
+INFO[2021-03-22T15:36:58.265181484Z] Start streaming server
+```
+
+Put the process to sleep using `CTRL+Z` and then place it in the background using `bg`.
+
+```bash
+# CTRL+Z
+^Z
+[1]+  Stopped                 sudo containerd
+
+# Run in background
+bg
+[1]+ sudo containerd &
+
+# Verify Jobs
+jobs
+[1]+  Running                 sudo containerd &
+```
+
+Now leverage `ctr` to verify the client and server version.
+```bash
+sudo ctr version
+ Client:
+  Version:  v1.4.4
+  Revision: 05f951a3781f4f2c1911b05e61c160e9c30eaa8e
+  Go version: go1.15.8
+
+Server:
+  Version:  v1.4.4
+  Revision: 05f951a3781f4f2c1911b05e61c160e9c30eaa8e
+  UUID: 413bd51b-46cc-4a68-97f3-f4da0c29f00a
+```
+
+### Updating daemon configuration
+
+By default the socket is owned by root user and root group, if you want to make it available for `vagrant` user, you need to updated the configuration by changing the GID. You can leverage the script `config.containerd.sh` located in `scripts` folder.
+
+```bash
+sudo mkdir -p /etc/containerd/
+
+cat <<-EOF | sudo tee /etc/containerd/config.toml
+
+[grpc]
+# vagrant gid is 1000
+gid = 1000
+
+EOF
+
+# Now restart the containerd daemon.
+fg
+# CTRL+C
+INFO[2021-03-22T15:51:31.898982206Z] Stop CRI service
+
+# Start the daemon
+sudo containerd &
+
+# Verify socket permissions
+ls -al /run/containerd/containerd.sock
+srw-rw---- 1 root vagrant 0 Mar 22 15:52 /run/containerd/containerd.sock
+
+# Compare default and current configuration
+diff <(containerd config default) <(containerd config dump)
+7a8
+> imports = ["/etc/containerd/config.toml"]
+15c16
+<   gid = 0
+---
+>   gid = 1000
+
+# Now you can use ctr without sudo
+ctr version
+Client:
+  Version:  v1.4.4
+  Revision: 05f951a3781f4f2c1911b05e61c160e9c30eaa8e
+  Go version: go1.15.8
+
+Server:
+  Version:  v1.4.4
+  Revision: 05f951a3781f4f2c1911b05e61c160e9c30eaa8e
+  UUID: 413bd51b-46cc-4a68-97f3-f4da0c29f00a
+```
+
 
 
 
