@@ -1412,6 +1412,10 @@ docker pull bash
 
 ## Containerd
 
+Containerd is an industry standard container runtime.
+
+![Conteinerd](https://containerd.io/img/architecture.png)
+
 ### Installation
 
 You can leverage the preparad Vagrantfile located in `installation/containerd` directory. It uses bash provisioning that will download the binaries from Containerd Github repository. Once the VM is provisioned, log in via SSH.
