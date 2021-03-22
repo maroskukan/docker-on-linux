@@ -41,6 +41,8 @@
     - [Default configuration](#default-configuration)
     - [Starting daemon](#starting-daemon)
     - [Updating daemon configuration](#updating-daemon-configuration)
+    - [Pulling image with ctr](#pulling-image-with-ctr)
+    - [Running container with ctr](#running-container-with-ctr)
 
 ## Introduction
 
@@ -1411,7 +1413,7 @@ docker pull bash
 
 ### Installation
 
-You can leverage the preparad Vagrantfile located in `installation/containerd` directory. It uses bash provisioning that will download the binaries from Contaierd Github repository. Once the VM is provisioned, log in via SSH.
+You can leverage the preparad Vagrantfile located in `installation/containerd` directory. It uses bash provisioning that will download the binaries from Containerd Github repository. Once the VM is provisioned, log in via SSH.
 
 ```bash
 vagrant ssh
@@ -1585,7 +1587,70 @@ Server:
   UUID: 413bd51b-46cc-4a68-97f3-f4da0c29f00a
 ```
 
+### Pulling image with ctr
 
+You can use `ctr pull` command in order to pull image from registry.
+
+```bash
+# Pull from user repository
+ctr image pull docker.io/maroskukan/nginx:latest
+docker.io/maroskukan/nginx:latest:                                                resolved       |++++++++++++++++++++++docker.io/maroskukan/nginx:latest:                                                resolved       |++++++++++++++++++++++++++++++++++++++|
+manifest-sha256:613685ef083f86e210af0d6559758b143c63fe47c0eba5c875b511c22a9e42c6: done           |++++++++++++++++++++++++++++++++++++++|
+layer-sha256:91cfb218877963b6783fe6e97225ce5e7c6c372744e1d7775376817cdf89bed6:    done           |++++++++++++++++++++++++++++++++++++++|
+layer-sha256:eb93aa3f4772a4b09d91a874d949a794c131dc4608a76270ace4c67e8a436e5d:    done           |++++++++++++++++++++++++++++++++++++++|
+config-sha256:7a3df61de3f8d6c1b7ebdd5571de360e20911566e44eb1ab274d2b9a084ce8af:   done           |++++++++++++++++++++++++++++++++++++++|
+layer-sha256:5774b0936f5f085fe84f8647f77ed9a99c3302427c7ce991fd05f28ea798e575:    done           |++++++++++++++++++++++++++++++++++++++|
+layer-sha256:9f478418aa806eb7aad676ebc11a6efcfd6210dad730936f181d519fe092a9ac:    done           |++++++++++++++++++++++++++++++++++++++|
+elapsed: 5.4 s                                                                    total:  8.7 Ki (1.6 KiB/s)
+
+unpacking linux/amd64 sha256:613685ef083f86e210af0d6559758b143c63fe47c0eba5c875b511c22a9e42c6...
+done
+
+# Pull from official repository
+ctr image pull docker.io/latest/hello-world:latest
+docker.io/library/hello-world:latest:                                             resolved       |++++++++++++++++++++++++++++++++++++++|
+index-sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24:    done           |++++++++++++++++++++++++++++++++++++++|
+manifest-sha256:1b26826f602946860c279fce658f31050cff2c596583af237d971f4629b57792: done           |++++++++++++++++++++++++++++++++++++++|
+layer-sha256:b8dfde127a2919ff59ad3fd4a0776de178a555a76fff77a506e128aea3ed41e3:    done           |++++++++++++++++++++++++++++++++++++++|
+config-sha256:d1165f2212346b2bab48cb01c1e39ee8ad1be46b87873d9ca7a4e434980a7726:   done           |++++++++++++++++++++++++++++++++++++++|
+elapsed: 6.1 s                                                                    total:  2.6 Ki (430.0 B/s)
+
+unpacking linux/amd64 sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24...
+done
+```
+
+### Running container with ctr
+
+You can use `ctr run` command in order to run a container from image.
+
+```bash
+sudo ctr run --rm docker.io/library/hello-world:latest hw
+time="2021-03-22T16:04:50.320422436Z" level=info msg="starting signal loop" namespace=default path=/run/containerd/io.containerd.runtime.v2.task/default/hw pid=2118
+INFO[2021-03-22T16:04:50.323684425Z] shim disconnected                             id=hw
+ERRO[2021-03-22T16:04:50.323718927Z] copy shim log                                 error="read /proc/self/fd/17: file already closed"
+ctr: OCI runtime create failed: unable to retrieve OCI runtime error (open /run/containerd/io.containerd.runtime.v2.task/default/hw/log.json: no such file or directory): exec: "runc": executable file not found in $PATH: unknown
+```
+
+As you can see from above output, we were not successfull. We are missing `runc`. You can install it using `runc.from.github.sh` script located in `scripts` folder.
+
+```bash
+VERSION="v1.0.0-rc93"
+
+sudo wget \
+  https://github.com/opencontainers/runc/releases/download/${VERSION}/runc.amd64 \
+  --output-document /bin/runc
+sudo chmod +x /bin/runc
+```
+
+Once awailable, retry the ctr command.
+```bash
+sudo ctr run --rm docker.io/library/hello-world:latest hw
+time="2021-03-22T16:13:34.701333672Z" level=info msg="starting signal loop" namespace=default path=/run/containerd/io.containerd.runtime.v2.task/default/hw pid=2176
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+# Output omitted
+```
 
 
 
