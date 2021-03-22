@@ -37,6 +37,8 @@
       - [Testing remotely with curl](#testing-remotely-with-curl)
       - [Creating docker context](#creating-docker-context)
   - [Containerd](#containerd)
+    - [Installation](#installation-1)
+    - [Configuration](#configuration)
 
 ## Introduction
 
@@ -1404,5 +1406,88 @@ docker pull bash
 ```
 
 ## Containerd
+
+### Installation
+
+You can leverage the preparad Vagrantfile located in `installation/containerd` directory. It uses bash provisioning that will download the binaries from Contaierd Github repository. Once the VM is provisioned, log in via SSH.
+
+```bash
+vagrant ssh
+# Verify CTR
+ctr --help
+NAME:
+   ctr -
+        __
+  _____/ /______
+ / ___/ __/ ___/
+/ /__/ /_/ /
+\___/\__/_/
+
+containerd CLI
+
+
+USAGE:
+   ctr [global options] command [command options] [arguments...]
+
+VERSION:
+   v1.4.4
+
+DESCRIPTION:
+
+ctr is an unsupported debug and administrative client for interacting
+with the containerd daemon. Because it is unsupported, the commands,
+options, and operations are not guaranteed to be backward compatible or
+stable from release to release of the containerd project.
+
+# Verify containerd
+containerd --help
+NAME:
+   containerd -
+                    __        _                     __
+  _________  ____  / /_____ _(_)___  ___  _________/ /
+ / ___/ __ \/ __ \/ __/ __ `/ / __ \/ _ \/ ___/ __  /
+/ /__/ /_/ / / / / /_/ /_/ / / / / /  __/ /  / /_/ /
+\___/\____/_/ /_/\__/\__,_/_/_/ /_/\___/_/   \__,_/
+
+high performance container runtime
+
+
+USAGE:
+   containerd [global options] command [command options] [arguments...]
+
+VERSION:
+   v1.4.4
+
+DESCRIPTION:
+
+containerd is a high performance container runtime whose daemon can be started
+by using this command. If none of the *config*, *publish*, or *help* commands
+are specified, the default action of the **containerd** command is to start the
+containerd daemon in the foreground.
+```
+
+As you can see from the above output, `ctr` is a client application that communicates to `containerd`. Containerd then talks to `runc`, which is a CLI tool for spawning and running containers according to the OCI specification.
+
+### Configuration
+
+Start by retrieving the default and current container configuration, including the socket address.
+```bash
+# Display default configuration
+containerd config default
+
+# Display current configuration
+containerd config dump
+
+# After installation default and current configuration is same
+# Below example uses diff with process substitution
+diff <(containerd config default) <(containerd config dump)
+```
+
+
+
+
+
+
+
 
 
