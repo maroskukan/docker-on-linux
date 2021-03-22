@@ -43,6 +43,7 @@
     - [Updating daemon configuration](#updating-daemon-configuration)
     - [Pulling image with ctr](#pulling-image-with-ctr)
     - [Running container with ctr](#running-container-with-ctr)
+    - [Containerd API](#containerd-api)
 
 ## Introduction
 
@@ -1651,6 +1652,10 @@ Hello from Docker!
 This message shows that your installation appears to be working correctly.
 # Output omitted
 ```
+
+### Containerd API
+
+Besides `ctr` tool, you can also interact with containerd directly, using [API](https://containerd.io/docs/getting-started/).
 
 
 
