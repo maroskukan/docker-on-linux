@@ -1,0 +1,8 @@
+Vagrant.configure("2") do |config|
+    config.vm.define "containerd" do |containerd|
+      containerd.vm.box = "generic/ubuntu2004"
+      containerd.vm.hostname = "containerd"
+    end
+
+    config.vm.provision "shell", path: "containerd.from.github.sh"
+  end
