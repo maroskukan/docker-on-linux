@@ -1,6 +1,6 @@
-# docker-on-linux
+# Running Docker on Linux
 
-- [docker-on-linux](#docker-on-linux)
+- [Running Docker on Linux](#running-docker-on-linux)
   - [Introduction](#introduction)
   - [Documentation](#documentation)
   - [Installation](#installation)
