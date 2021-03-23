@@ -1,0 +1,18 @@
+Vagrant.configure("2") do |config|
+    config.vm.define "update" do |update|
+      update.vm.box = "generic/ubuntu2004"
+      update.vm.hostname = "update"
+    end
+  
+    # Second Machine Definition
+    # config.vm.define "placeholder" do |placeholder|
+    #   placeholder.vm.box = "generic/ubuntu2004"
+    #   placeholder.vm.hostname = "placeholder"
+    # end
+  
+    config.vm.provision "shell", path: "1-install-19.03.sh", name: "1-install"
+    config.vm.provision "shell", path: "2-update-to-20.10.0.sh", name: "2-update"
+    config.vm.provision "shell", path: "3-create-some-state.sh", name: "3-state"
+    config.vm.provision "shell", path: "4-update-to-latest.sh", name: "4-update"
+  end
+  
