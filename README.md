@@ -1683,6 +1683,7 @@ vagrant provision --provision-with "2-update"
 
 # Create state
 vagrant provision --provision-with "3-state"
+
 # Update to latest
 vagrant provision --provision-with "4-update"
 ```
