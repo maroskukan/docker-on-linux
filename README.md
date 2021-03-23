@@ -44,6 +44,7 @@
     - [Pulling image with ctr](#pulling-image-with-ctr)
     - [Running container with ctr](#running-container-with-ctr)
     - [Containerd API](#containerd-api)
+  - [Updating Docker](#updating-docker)
 
 ## Introduction
 
@@ -1662,9 +1663,26 @@ This message shows that your installation appears to be working correctly.
 Besides `ctr` tool, you can also interact with containerd directly, using [API](https://containerd.io/docs/getting-started/).
 
 
+## Updating Docker
 
+The update process for Docker is heavily depended on the installation process. If you used a package manager to install, you will likely use it again to update.
 
+For example, lets consider the Binaries Vagrant box defined in`installation/binaries`. This approach downloads Docker binaries and copies them to `/usr/bin` folder. It is quite hard to keep track of which files were copied over and which files might be obsoleted in future releases. It is therefore important to consider the update path before you perform the installation itself.
 
+For this demostration we are are going to use Vagrant box defined inside `update/ubuntu-20.04` folder. 
 
+```bash
+# Initiate Vagrant Box without provisioning
+vagrant up --no-provision
 
+# Install Docker 19.03
+vagrant provision --provision-with "1-install"
 
+# Updated to Docker 20.10
+vagrant provision --provision-with "2-update"
+
+# Create state
+vagrant provision --provision-with "3-state"
+# Update to latest
+vagrant provision --provision-with "4-update"
+```
