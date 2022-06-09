@@ -1,6 +1,8 @@
 # Devops Foundations - Containers
 
-## gittea
+## gitea
+
+Running basic gitea container.
 
 ```bash
 # Download the application package
@@ -15,4 +17,10 @@ docker run -d -p 3000:3000 gitea
 
 # Interact with the container
 curl -I http://localhost:3000
+```
+
+Running gitea and mysql container.
+
+```bash
+docker-compose up
 ```
