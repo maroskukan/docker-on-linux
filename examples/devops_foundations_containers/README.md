@@ -1,6 +1,7 @@
 # Devops Foundations - Containers
 
-## gitea
+## Sample applications
+### gitea
 
 Running basic gitea container.
 
@@ -24,3 +25,18 @@ Running gitea and mysql container.
 ```bash
 docker-compose up
 ```
+
+
+## Container runtime options
+
+- Docker Engine
+- containerd
+- CRI-O
+- Mirantis Container Runtime
+
+
+## Container orchestration options
+
+- Docker Swarm
+- Kubernetes
+- Apache Mesos
