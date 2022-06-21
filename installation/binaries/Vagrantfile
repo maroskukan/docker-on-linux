@@ -1,12 +1,20 @@
 Vagrant.configure("2") do |config|
+  config.vm.provider "hyperv" do |h|
+    h.enable_virtualization_extensions = true
+    h.linked_clone = true
+    h.memory = 4096
+    h.maxmemory = 4096
+  end
+
   config.vm.define "binaries" do |binaries|
-    binaries.vm.box = "generic/ubuntu2004"
+    binaries.vm.box = "generic/ubuntu2204"
     binaries.vm.hostname = "binaries"
+    binaries.vm.network "public_network", bridge: "Default Switch"
   end
 
   # Second Machine Definition
   # config.vm.define "placeholder" do |placeholder|
-  #   placeholder.vm.box = "generic/ubuntu2004"
+  #   placeholder.vm.box = "generic/ubuntu2204"
   #   placeholder.vm.hostname = "placeholder"
   # end
 

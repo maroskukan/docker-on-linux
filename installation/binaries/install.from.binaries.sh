@@ -1,7 +1,7 @@
 #!/bin/sh
 
 
-VERSION="20.10.2"
+VERSION="20.10.9"
 ARCH="x86_64"
 CHANNEL="stable"
 
