@@ -1,5 +1,37 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "generic/ubuntu2004"
+
+  # Hyper-V Provider Specific Configuration
+  config.vm.provider "hyperv" do |h|
+    h.enable_virtualization_extensions = true
+    h.linked_clone = true
+    h.memory = 2048
+    h.maxmemory = 2048
+  end
+
+  # Virtualbox Provider Specific Configuration
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 2048
+    v.cpus = 2
+  end
+
+  config.vm.define "ubuntu2004" do |ubuntu2004|
+    # VM Shared Configuration
+    ubuntu2004.vm.box = "generic/ubuntu2204"
+    ubuntu2004.vm.hostname = "ubuntu2004"
+
+    # Hyper-V VM Specific Configuration
+    ubuntu2004.vm.provider 'hyperv' do |h, override|
+      override.vm.synced_folder ".", "/vagrant", type: "rsync"
+      override.vm.network "public_network", bridge: "Default Switch"
+    end
+
+    # Virtualbox VM Specific Configuration
+    ubuntu2004.vm.provider 'virtualbox' do |v, override|
+      override.vm.synced_folder ".", "/vagrant"
+    end
+  end
+
+  # VM Shared Provisioning
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "playbook.yml"
   end
