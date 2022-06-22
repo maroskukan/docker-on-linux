@@ -21,6 +21,7 @@ Vagrant.configure("2") do |config|
 
     # Hyper-V VM Specific Configuration
     binaries.vm.provider 'hyperv' do |h, override|
+      override.vm.synced_folder ".", "/vagrant", type: "rsync"
       override.vm.network "public_network", bridge: "Default Switch"
     end
 
