@@ -1,12 +1,12 @@
 ---
 # adopted from https://docs.docker.com/engine/install/ubuntu
-# tested on vagrant box generic/ubuntu2004
+# tested on vagrant box generic/ubuntu2204
 - hosts: all
   tasks:
     - name: ensure docker os requirements are met https://docs.docker.com/engine/install/ubuntu#os-requirements
       assert:
         that:
-          - ansible_distribution_version in ["16.04", "18.04", "20.04", "20.10"]
+          - ansible_distribution_version in ["16.04", "18.04", "20.04", "20.10", "22.04"]
           - ansible_distribution == 'Ubuntu'
     - name: ensure old docker packages are absent
       apt:
@@ -27,7 +27,7 @@
         url: https://download.docker.com/linux/ubuntu/gpg
     - name: add docker's apt repo
       apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable"
     - name: ensure cli only
       apt:
         pkg: docker-ce-cli
