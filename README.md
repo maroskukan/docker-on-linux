@@ -45,6 +45,8 @@
     - [Running container with ctr](#running-container-with-ctr)
     - [Containerd API](#containerd-api)
   - [Updating Docker](#updating-docker)
+  - [Tips](#tips)
+    - [Multiarch support](#multiarch-support)
 
 ## Introduction
 
@@ -1686,4 +1688,24 @@ vagrant provision --provision-with "3-state"
 
 # Update to latest
 vagrant provision --provision-with "4-update"
+```
+
+
+## Tips
+
+### Multiarch support
+
+```bash
+# Verify the host architecture
+x86_64
+
+# Install qemu and qemu user mode emulation of qemu targets built as static binaries
+sudo dnf install qemu qemu-user-static
+
+# Update binfmt interpreter on host
+docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+# Test by running a container for arm platform
+docker run --rm -t arm64v8/ubuntu uname -m
+aarch64
 ```
